@@ -1,14 +1,18 @@
 name: Build AlphaROM Crack DLL
 
 on:
-  workflow_dispatch: # 允許手動點擊按鈕觸發編譯
+  workflow_dispatch: 
+
+env:
+  SOLUTION_FILE_PATH: .
+  BUILD_CONFIGURATION: Release
 
 permissions:
   contents: read
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: windows-2019 # 改用相容性更好的舊版 Windows 環境
 
     steps:
     - name: Checkout repository
@@ -17,12 +21,16 @@ jobs:
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v2
 
+    - name: Restore NuGet packages
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: nuget restore ${{env.SOLUTION_FILE_PATH}}
+
     - name: Build Solution (x86 Release)
-      run: msbuild AlphaROM_Crack.sln /p:Configuration=Release /p:Platform=x86
+      run: msbuild ${{env.SOLUTION_FILE_PATH}} /m /p:Configuration=${{env.BUILD_CONFIGURATION}} /p:Platform=x86
 
     - name: Build Solution (x64 Release)
-      run: msbuild AlphaROM_Crack.sln /p:Configuration=Release /p:Platform=x64
-      continue-on-error: true # 如果專案本身不支援 64 位元，跳過不報錯
+      run: msbuild ${{env.SOLUTION_FILE_PATH}} /m /p:Configuration=${{env.BUILD_CONFIGURATION}} /p:Platform=x64
+      continue-on-error: true 
 
     - name: Upload compiled DLLs
       uses: actions/upload-artifact@v4
@@ -31,4 +39,5 @@ jobs:
         path: |
           **/Release/*.dll
           **/x64/Release/*.dll
+
 
